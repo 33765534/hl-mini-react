@@ -384,6 +384,7 @@ requestIdleCallback(workLoop);
 转换到 react 中的实现：
 
 React.js
+
 ```
 let nextUnitOfWork=null;
 function workLoop(deadLine){
@@ -557,3 +558,389 @@ function performWorkOfUnit(fiber){
     return fiber.parent?.sibling;// 没有兄弟节点 返回父节点的兄弟节点
 }
 ```
+
+## 统一提交到页面中
+
+问题：我们是使用 requestIdleCallback 来实现的，只有等待浏览器有空闲时间才会执行任务，如果任务很多，那页面渲染就只能看到一半渲染。
+
+解决思路：
+
+计算结束后统一添加到页面中
+
+1. 需要知道链表什么时候结束，当 nextUnitOfWork 为 null 的时候链表就结束了。
+2. 需要知道链表的第一个节点，因为需要从第一个节点开始 append。也就是 redner 赋的值，我们用 root 记录这个值。
+
+React.js
+
+```
+let root = null;
+function render(el, container) {
+  nextUnitOfWork = {
+    dom: container,
+    props: {
+      children: [el],
+    },
+  };
+
+  root = nextUnitOfWork;
+}
+
+function workLoop(deadline){
+    let shouldYield=false;
+    while(nextUnitOfWork && !shouldYield){
+        nextUnitOfWork=performWorkOfUnit(nextUnitOfWork);
+        shouldYield=deadline.timeRemaining()<1;
+    }
+    // 链表结束之后调用 append 添加到页面中
+    if(!nextUnitOfWork && root){
+        commitRoot();
+    }
+    requestIdleCallback(workLoop);
+}
+requestIdleCallback(workLoop);
+
+function commitRoot(){
+    commitWork(root.child);
+    root=null;
+}
+function commitWork(fiber){
+    if(!fiber) return;
+    // 找到父级把当前dom添加进去
+    filber.parent.dom.append(fiber.dom);
+    // 递归添加子节点
+    commitWork(fiber.child);
+    // 递归添加兄弟节点
+    commitWork(fiber.sibling);
+}
+```
+
+同时把之前在 performWorkOfUnit 中的 append 方法删除
+React.js
+
+```
+function performWorkOfUnit(fiber){
+    // 省略...
+    // filber.parent.dom.append(dom);
+    // 省略...
+}
+```
+
+## 实现支持 function component
+
+#### 实现 function component
+
+在 react 中创建一个组件是非常容易的
+demo:
+
+```
+import React from './core/React';
+function MyComponent() {
+    return <div>Hello, world!</div>;
+}
+
+const App = (
+    <div>
+    hi-mini-react
+    <MyComponent />
+    </div>
+);
+
+export default App;
+```
+
+当前这个例子运行起来会报错，type name 是 function，当前不支持 function component
+![Alt text](image-3.png)
+我们怎么才能得到 counter 下的节点尼？
+需要调用 function（开箱）
+![Alt text](image-4.png)
+我们在 createWorkInProgress 中添加一个判断，如果 type 是 function 则调用该函数
+
+```
+function performWorkOnUnit(fiber){
+    const isFunctionComponent = fiber.type instanceof Function;
+    if(isFunctionComponent){
+        console.log(fiber.type());
+    }
+    // 省略...
+}
+```
+
+可以看到我们得到的是一个对象
+![Alt text](image-5.png)
+
+1. 对于我们程序来说 initChildren 需要的是一个数组，可以包裹一下，我们把 initChildren 中处理 children 的提取出来,当作参数传入
+2. 对于 function 而言我们不需要创建 dom，所以不是 function 的时候才需要创建 dom
+
+```
+function performWorkOnUnit(fiber){
+    const isFunctionComponent = fiber.type instanceof Function;
+    if(!isFunctionComponent){
+        if (!fiber.dom) {
+        // 创建节点 先判断一下是text类型么
+        const dom = (fiber.dom = createDom(fiber.type));
+
+        // 存放 父级容器
+        // fiber.parent.dom.append(dom);
+        // 处理props
+        updateProps(dom, fiber.props);
+        }
+    }
+
+    const children=isFunctionComponent?[fiber.type()]:fiber.props.children;
+    initChildren(fiber,children);
+    // 省略...
+}
+```
+
+到此我们的页面可以渲染出 hi-mini-react 了，function 的组件还没有展示出来还报了一个错，这是因为我们 function 是没有父级的，子节点没办法 append 挂载
+![Alt text](image-6.png)
+那么怎么解决尼？父类没有是不是可以继续往上找，然后挂载，在统一提交的函数中处理
+
+```
+function commitWork(fiber){
+    if(!fiber) return;
+    let fiberParent=fiber.parent;
+    if(!fiberParent.dom){
+        fiberParent=fiberParent.parent;
+    }
+    // 找到父级把当前dom添加进去
+    fiberParent.dom.append(fiber.dom);
+    // 递归添加子节点
+    commitWork(fiber.child);
+    // 递归添加兄弟节点
+    commitWork(fiber.sibling);
+}
+```
+
+到这我们可以渲染 function 的组件了，但是还打印了个 null
+是因为我们在 append 的时候 把空的也添加进去了
+![Alt text](image-7.png)
+那么怎么处理呢？
+我们在 append 的时候 判断一下是不是空的，如果是空的就不添加了
+
+```
+// 找到父级把当前dom添加进去
+    if(fiber.dom)fiberParent.dom.append(fiber.dom);
+```
+
+如果我们的 function component 是嵌套的，那么怎么处理呢？
+
+```
+import React from './core/React';
+function MyComponent() {
+    return <div>Hello, world!</div>;
+}
+function Component(){
+    return (
+        <div>
+        <MyComponent />
+        </div>
+    );
+}
+
+const App = (
+    <div>
+    hi-mini-react
+    <Component />
+    </div>
+);
+
+export default App;
+```
+
+可以看到报错了，在 append 的时候找不到父级挂载
+![Alt text](image-8.png)
+我们在找父级的时候要调整一下,利用 while 循环找到父级,这样就解决嵌套的问题了
+
+```
+function commitWork(fiber){
+    if(!fiber) return;
+    let fiberParent=fiber.parent;
+    // 循环找到父级
+    while(!fiberParent.dom){
+        fiberParent=fiberParent.parent;
+    }
+    // 找到父级把当前dom添加进去
+    fiberParent.dom.append(fiber.dom);
+    // 递归添加子节点
+    commitWork(fiber.child);
+    // 递归添加兄弟节点
+    commitWork(fiber.sibling);
+}
+```
+
+到这，我们就可以愉快的使用 function component 了
+
+App.jsx
+
+```
+import React from './core/React';
+function MyComponent() {
+    return <div>Hello, world!</div>;
+}
+function Component(){
+    return (
+        <div>
+        <MyComponent />
+        </div>
+    );
+}
+
+function App(){
+    <div>
+    hi-mini-react
+    <Component />
+    </div>
+};
+
+export default App;
+```
+
+main.js 修改成 main.jsx  
+以及 index.html 中的main.jsx引用
+
+```
+import ReactDOM from "./core/ReactDOM.js";
+import React from "./core/React.js";
+import App from "./App.jsx";
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App></App>);
+
+```
+
+#### function component 支持 props
+
+App.jsx
+
+```
+import React from './core/React';
+
+function Component({num}){
+    return (
+        <div>
+        count:{num}
+        </div>
+    );
+}
+
+function App(){
+    <div>
+    hi-mini-react
+    <Component num={10}/>
+    </div>
+};
+
+export default App;
+```
+
+可以看到目前的实现没有传 props
+![Alt text](image-9.png)
+
+接下来我们实现一下
+
+```
+function performWorkOnUnit(fiber){
+    // 省略...
+    const children=isFunctionComponent?[fiber.type(fiber.props)]:fiber.props.children;
+    initChildren(fiber,children);
+    // 省略...
+}
+```
+
+给完之后可以看到还是报错
+
+![Alt text](image-10.png)
+我们之前只处理 string 现在我们传入的是 number 类型，所以把我们传入的 props 当成 child 处理了
+
+![Alt text](image-11.png)
+在增加一个 number 类型的判断
+
+![Alt text](image-12.png)
+
+接下来我们调用多个 Component 组件
+
+结构如下
+![Alt text](image-13.png)
+
+App.jsx
+
+```
+import React from './core/React';
+
+function Component({num}){
+    return (
+        <div>
+        count:{num}
+        </div>
+    );
+}
+
+function App(){
+    <div>
+    hi-mini-react
+    <Component num={10}/>
+    <Component num={20}/>
+    </div>
+};
+
+export default App;
+```
+
+通过断点调试可以找到 当 function component 的节点都处理完之后，去找父级的父级的兄弟节点时出现的错误。
+
+```
+function performWorkOnUnit(fiber){
+    // 省略...
+    // 返回下一个要执行的任务
+  if (fiber.child) {
+    // 有孩子节点 返回第一个孩子节点
+    return fiber.child;
+  }
+
+  let nextFiber = fiber;
+  while (nextFiber) {
+    if (nextFiber.sibling) {
+        // 没有孩子节点 返回兄弟节点
+      return nextFiber.sibling;
+    }
+    nextFiber = nextFiber.parent;
+  }
+  return null;
+}
+```
+
+#### 重构代码
+
+抽离一下 处理 function component 的逻辑 以及 非 function component 的逻辑
+
+```
+// 处理 function component
+function updateFunctionComponent(fiber){
+    const children=[filber.type(filber.props)]
+    initChildren(fiber,children);
+}
+
+// 非 function component
+function updateHostComponent(fiber){
+    if(!filber.dom){
+        const dom = (filber.dom = createDom(fiber.type));
+
+        updateProps(dom,fiber.props);
+    }
+    const children = fiber.props.children;
+    initChildren(fiber,children);
+}
+
+function performUnitOfWork(fiber){
+    const isFunctionComponent = fiber.type instanceof Function;
+
+    if(isFunctionComponent){
+        updateFunctionComponent(fiber);
+    }else{
+        updateHostComponent(fiber);
+    }
+
+    // 省略 ...
+}
+```
+

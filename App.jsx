@@ -1,11 +1,22 @@
 import React from "./core/React.js";
 // const App = React.createElement("div",{id:"app"},"app-hhh");
-const App = <div>
-    <div>aaa</div>
-    <div>bbb
+
+function Component({ num }) {
+  return <div>count:{num}</div>;
+}
+function App() {
+  return (
+    <div>
+      <div>aaa</div>
+      <Component num={10} />
+      <Component num={20} />
+      <div>
+        bbb
         <div>CCC</div>
-        <div>DDD<div>EEE</div></div>
+        <div>DDD</div>
+      </div>
     </div>
-</div>
+  );
+}
 
 export default App;

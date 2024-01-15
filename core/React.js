@@ -20,6 +20,7 @@ function createTextNode(text) {
   };
 }
 
+let root = null;
 function render(el, container) {
   nextUnitOfWork = {
     dom: container,
@@ -27,6 +28,8 @@ function render(el, container) {
       children: [el],
     },
   };
+
+  root = nextUnitOfWork;
 }
 
 // 模拟任务拆分和执行
@@ -37,9 +40,26 @@ function workLoop(deadLine) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
     shouldYield = deadLine.timeRemaining() < 1;
   }
-  if (nextUnitOfWork) {
-    requestIdleCallback(workLoop);
+  if (!nextUnitOfWork && root) {
+    commitRoot();
   }
+  requestIdleCallback(workLoop);
+}
+
+function commitRoot() {
+  commitWork(root.child);
+  root = null;
+}
+
+function commitWork(fiber) {
+  if (!fiber) return;
+  let parentFilber = fiber.parent;
+  while (!parentFilber.dom) {
+    parentFilber = parentFilber.parent;
+  }
+  if (fiber.dom) parentFilber.dom.append(fiber.dom);
+  commitWork(fiber.child);
+  commitWork(fiber.sibling);
 }
 // 任务调度器
 requestIdleCallback(workLoop);
@@ -61,9 +81,8 @@ function updateProps(dom, props) {
   });
 }
 
-function initChildren(fiber) {
+function initChildren(fiber, children) {
   // 转换链表 设置好指针
-  const children = fiber.props.children || [];
   let prevchild = null; // 上一个孩子节点
   children.forEach((child, index) => {
     const newFiber = {
@@ -83,17 +102,20 @@ function initChildren(fiber) {
 }
 // 执行任务
 function performUnitOfWork(fiber) {
-  if (!fiber.dom) {
-    // 创建节点 先判断一下是text类型么
-    const dom = (fiber.dom = createDom(fiber.type));
-
-    // 存放 父级容器
-    fiber.parent.dom.append(dom);
-    // 处理props
-    updateProps(dom, fiber.props);
+  const isFunctionComponent = fiber.type instanceof Function;
+  if (!isFunctionComponent) {
+    if (!fiber.dom) {
+      // 创建节点 先判断一下是text类型么
+      const dom = (fiber.dom = createDom(fiber.type));
+      // 处理props
+      updateProps(dom, fiber.props);
+    }
   }
 
-  initChildren(fiber)
+  const children = isFunctionComponent
+    ? [fiber.type(fiber.props)]
+    : fiber.props.children;
+  initChildren(fiber, children);
 
   // 返回下一个要执行的任务
   if (fiber.child) {
@@ -104,7 +126,13 @@ function performUnitOfWork(fiber) {
     // 没有孩子节点 返回兄弟节点
     return fiber.sibling;
   }
-  return fiber.parent?.sibling || null; // 没有兄弟节点 返回父节点的兄弟节点
+
+  // 循环向上查找 兄弟节点
+  let parent = fiber;
+  while (parent) {
+    if (parent.sibling) return parent.sibling;
+    parent = parent.parent;
+  }
 }
 
 const React = {
