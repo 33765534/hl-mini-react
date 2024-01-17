@@ -1,20 +1,23 @@
 import React from "./core/React.js";
-// const App = React.createElement("div",{id:"app"},"app-hhh");
 
+let count = 10;
 function Component({ num }) {
-  return <div>count:{num}</div>;
+  function handleClick() {
+    console.log("click");
+    count++;
+    React.update();
+  }
+  return (
+    <div>
+      count:{count}
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
 }
 function App() {
   return (
     <div>
-      <div>aaa</div>
       <Component num={10} />
-      <Component num={20} />
-      <div>
-        bbb
-        <div>CCC</div>
-        <div>DDD</div>
-      </div>
     </div>
   );
 }

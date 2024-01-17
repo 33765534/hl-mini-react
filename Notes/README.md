@@ -944,3 +944,249 @@ function performUnitOfWork(fiber){
 }
 ```
 
+## 实现绑定事件
+在 App.jsx 中，添加一个按钮，并绑定点击事件。
+```
+function Component({ num }) {
+  function handleClick(){
+    console.log(num);
+  }
+  return (
+    <div>
+      count:{num}
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+```
+我们在 initChildren 函数中打印一下fiber 看看按钮生成的结构
+
+![Alt text](image-14.png)
+
+可以看到，按钮生成的 fiber 结构中，找到button结构，它下面的props中还有一个 onClick 属性。
+
+我们可以根据 on 开头的属性名，来确认它是一个事件，然后再绑定到dom上
+
+React.js
+```
+function updateProps(dom,props){
+    Object.keys(props).forEach(key=>{
+        if(key.startsWith('on')){
+            // 事件名
+            const eventName = key.slice(2).toLowerCase();// 或.substring(2);
+            dom.addEventListener(eventName,props[key]);
+        }else{
+            dom[key] = props[key];
+        }
+    })
+}
+```
+
+## 实现更新->props
+核心：
+
+对比 new vdom tree VS old vdom tree，找出差异，更新dom
+
+1. 如何得到新的 dom 树？
+   创建 update 函数，拿到根节点，根节点怎么拿尼？之前我们创建了一个root 变量来存放根节点的，但是不能直接用它，它是处理commitWork(统一提交)时候用的，所以我们创建一个currentRoot变量来存放当前的根节点，在root 被清除之前给它赋值，也就是初始化完页面就赋值了，保证下次更新之前它就有值。
+```
+let currentRoot=null;
+
+function commitRoot(){
+    commitWork(root.child);
+    currentRoot=root; // 保证下次更新之前它就有值
+    root=null;
+}
+
+function update(){
+    nextWorkOfUnit={
+        dom:currentRoot.dom,
+        props:currentRoot.props
+    }
+    root = nextWorkOfUnit
+}
+```
+2. 如何找到老的节点
+    之前我们是把树转变成了链表，新链表的时候我们创建一个属性来指向老俩表的节点，那么我们什么时候构建 新链表尼？在创建链表的时候
+   ![Alt text](image-15.png)
+   ![Alt text](image-16.png)
+    ```
+    function update(){
+        nextWorkOfUnit={
+            dom:currentRoot.dom,
+            props:currentRoot.props,
+            alternate:currentRoot  // 指向老链表root
+        }
+        root = nextWorkOfUnit
+    }
+
+    function initChildren(fiber, children) {
+        let oldFiber = fiber.alternate?.child;// 存一下老的节点
+        // 转换链表 设置好指针
+        let prevchild = null; // 上一个孩子节点
+        children.forEach((child, index) => {
+            const isSameType = oldFiber && child && oldFiber.type === child.type;
+            let newFiber;
+            if(isSameType){
+                 newFiber = {
+                    type: child.type,
+                    props: child.props,
+                    parent: fiber,
+                    sibling: null, // 兄弟节点
+                    dom: oldFiber.dom,// 更新到老节点上不创建新节点
+                    effectTag:'udpate',
+                    alternate:oldFiber // 指向老节点
+                };
+            }else{
+                 newFiber = {
+                    type: child.type,
+                    child:null,
+                    props: child.props,
+                    parent: fiber,
+                    sibling: null, // 兄弟节点
+                    dom: null,
+                    effectTag:'placement'
+                };
+            }
+            
+            if(oldFiber){
+                // 指针处理兄弟节点
+                oldFiber = oldFiber.sibling;
+            }
+            if (index === 0) {
+             fiber.child = newFiber; // 如果是第一个 就直接放到child 中
+            } else {
+                prevchild.sibling = newFiber; // 不是第一个 就放到上一个的sibling中
+            }
+            prevchild = newFiber;
+        });
+        }
+
+    ```
+3. 如何diff props
+   对于更新逻辑来说需要得到之前的props 才能进行比较
+   ```
+   function commitWork(fiber){
+        if(!fiber) return;
+        let fiberParent=fiber.parent;
+        // 循环找到父级
+        while(!fiberParent.dom){
+            fiberParent=fiberParent.parent;
+        }
+        // 判断是更新还是创建
+        if(fiber.effectTag==='update'){
+            updateProps(fiber.dom,fiber.props,fiber.alternate?.props);
+        }else if(fiber.effectTag==='placement' && fiber.dom){
+            // 找到父级把当前dom添加进去
+            fiberParent.dom.append(fiber.dom);
+        }
+        
+        // 递归添加子节点
+        commitWork(fiber.child);
+        // 递归添加兄弟节点
+        commitWork(fiber.sibling);
+      }
+    // 重构updateProps
+    function updateProps(dom,nextProps,prevProps){
+        // 1.old 有 new 没有  删除
+        // 2.new 有 old 没有 添加
+        // 3.old new 都有 更新  2和3 可以合并成一个处理
+        // 删除
+        Object.keys(prevProps).forEach(key=>{
+            if(key!=="children"){
+                if(!(key in nextProps)){
+                    dom.removeAttribute(key);
+                }
+            }
+        })
+        // 更新
+        Object.keys(nextProps).forEach(key=>{
+            if(key!=="children"){
+                if(prevProps[key]!==nextProps[key]){
+                    if(key.startsWith('on')){
+                        const eventType=key.toLowerCase().substring(2);
+                        dom.addEventListener(eventType,nextProps[key]);
+                    }else{
+                        dom[key]=nextProps[key];
+                    }
+                }
+            }
+        })
+    } 
+   ```
+   修改一下 updateProps 调用的地方，然后再添加个count  来更新一下props ,同时别忘记导出 update 函数
+
+   App.jsx
+   ```
+    import React from "./core/React.js";
+
+    let count=10;
+    function Component({ num }) {
+    function handleClick(){
+        console.log('click');
+        count+++
+        React.update();
+    }
+    return (
+        <div>
+        count:{count}
+        <button onClick={handleClick}>click</button>
+        </div>
+    );
+    }
+    function App() {
+    return (
+        <div>
+        <div>aaa</div>
+        <Component num={10} />
+        <Component num={20} />
+        <div>
+            bbb
+            <div>CCC</div>
+            <div>DDD</div>
+        </div>
+        </div>
+    );
+    }
+
+    export default App;
+   ```
+测试一下，每次点击 click会掉用很多次
+![Alt text](image-17.png)
+update 的时候 我们只要更新了就给他添加一个addEventListener 事件,每次都挂载到dom上 老的也没有卸载
+```
+function updateProps(dom,nextProps,prevProps){
+       // 省略...
+        // 更新
+        Object.keys(nextProps).forEach(key=>{
+            if(key!=="children"){
+                if(prevProps[key]!==nextProps[key]){
+                    if(key.startsWith('on')){
+                        const eventType=key.toLowerCase().substring(2);
+                        dom.removeEventListener(eventType,prevProps[key]);
+                        dom.addEventListener(eventType,nextProps[key]);
+                    }else{
+                        dom[key]=nextProps[key];
+                    }
+                }
+            }
+        })
+    } 
+```
+
+## 重构代码
+root 的命名不太合适，正在工作中的root 我们叫它一个 wipRoot
+以及 update 函数中的赋值,render 的也换一下
+```
+function update(){
+     wipRoot={
+        dom:currentRoot.dom,
+        props:currentRoot.props
+    }
+     nextWorkOfUnit=wipRoot
+}
+```
+
+initChildren 命名也不太合适，我们叫他一个reconcileChildren
+
+

@@ -20,16 +20,25 @@ function createTextNode(text) {
   };
 }
 
-let root = null;
+let wipRoot = null;
+let currentRoot = null;
 function render(el, container) {
-  nextUnitOfWork = {
+  wipRoot = {
     dom: container,
     props: {
       children: [el],
     },
   };
+  nextUnitOfWork = wipRoot;
+}
+function update() {
+  wipRoot = {
+    dom: currentRoot.dom,
+    props: currentRoot.props,
+    alternate: currentRoot,
+  };
 
-  root = nextUnitOfWork;
+  nextUnitOfWork = wipRoot;
 }
 
 // 模拟任务拆分和执行
@@ -40,15 +49,16 @@ function workLoop(deadLine) {
     nextUnitOfWork = performUnitOfWork(nextUnitOfWork);
     shouldYield = deadLine.timeRemaining() < 1;
   }
-  if (!nextUnitOfWork && root) {
+  if (!nextUnitOfWork && wipRoot) {
     commitRoot();
   }
   requestIdleCallback(workLoop);
 }
 
 function commitRoot() {
-  commitWork(root.child);
-  root = null;
+  commitWork(wipRoot.child);
+  currentRoot = wipRoot;
+  wipRoot = null;
 }
 
 function commitWork(fiber) {
@@ -57,7 +67,11 @@ function commitWork(fiber) {
   while (!parentFilber.dom) {
     parentFilber = parentFilber.parent;
   }
-  if (fiber.dom) parentFilber.dom.append(fiber.dom);
+  if (fiber.effectTag === "update") {
+    updateProps(fiber.dom, fiber.props, fiber.alternate?.props);
+  } else if (fiber.effectTag === "placement") {
+    if (fiber.dom) parentFilber.dom.append(fiber.dom);
+  }
   commitWork(fiber.child);
   commitWork(fiber.sibling);
 }
@@ -71,27 +85,68 @@ function createDom(type) {
     : document.createElement(type);
 }
 
-function updateProps(dom, props) {
+function updateProps(dom, nextProps, prevProps) {
   // 处理props
-  Object.keys(props).forEach((key) => {
+  debugger;
+  // 1.old 有 new 没有  删除
+  Object.keys(prevProps).forEach((key) => {
+    if (key !== "children") {
+      if (!(key in nextProps)) {
+        dom.removeAttribute(key);
+      }
+    }
+  });
+  // 2.new 有 old 没有 添加
+  // 3.old new 都有 更新  2和3 可以合并成一个处理
+  Object.keys(nextProps).forEach((key) => {
     // 判断一下是不是children属性 不是则直接赋值
     if (key !== "children") {
-      dom[key] = props[key];
+      if (nextProps[key] !== prevProps[key]) {
+        if (key.startsWith("on")) {
+          const eventType = key.toLowerCase().substring(2);
+          dom.removeEventListener(eventType, prevProps[key]); // 卸载老的
+          dom.addEventListener(eventType, nextProps[key]); // 绑定新的
+        } else {
+          dom[key] = nextProps[key];
+        }
+      }
     }
   });
 }
 
-function initChildren(fiber, children) {
+function reconcileChildren(fiber, children) {
   // 转换链表 设置好指针
+  let oldFiber = fiber.alternate?.child; // 存一下老的节点
   let prevchild = null; // 上一个孩子节点
   children.forEach((child, index) => {
-    const newFiber = {
-      type: child.type,
-      props: child.props,
-      parent: fiber,
-      sibling: null, // 兄弟节点
-      dom: null,
-    };
+    const isSameType = oldFiber && oldFiber.type === child.type;
+    let newFiber;
+    if (isSameType) {
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        parent: fiber,
+        child: null, // 子节点
+        sibling: null, // 兄弟节点
+        dom: oldFiber.dom,
+        effectTag: "update",
+        alternate: oldFiber, // 指向老节点
+      };
+    } else {
+      newFiber = {
+        type: child.type,
+        props: child.props,
+        child: null, // 子节点
+        parent: fiber,
+        sibling: null, // 兄弟节点
+        dom: null,
+        effectTag: "placement",
+      };
+    }
+    if (oldFiber) {
+      oldFiber = oldFiber.sibling;
+    }
+
     if (index === 0) {
       fiber.child = newFiber; // 如果是第一个 就直接放到child 中
     } else {
@@ -108,14 +163,14 @@ function performUnitOfWork(fiber) {
       // 创建节点 先判断一下是text类型么
       const dom = (fiber.dom = createDom(fiber.type));
       // 处理props
-      updateProps(dom, fiber.props);
+      updateProps(dom, fiber.props, {});
     }
   }
 
   const children = isFunctionComponent
     ? [fiber.type(fiber.props)]
     : fiber.props.children;
-  initChildren(fiber, children);
+  reconcileChildren(fiber, children);
 
   // 返回下一个要执行的任务
   if (fiber.child) {
@@ -136,6 +191,7 @@ function performUnitOfWork(fiber) {
 }
 
 const React = {
+  update,
   createElement,
   render,
 };
