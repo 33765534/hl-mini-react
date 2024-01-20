@@ -361,7 +361,7 @@ vue 中的任务调度器是 Vue.js 中的一个核心概念，它负责协调�
 timeRemaining 方法返回当前帧还剩余多少时间，单位是毫秒。
 
 官网文档：develper.mozilla.org/zh-CN/docs/Web/API/Window/requestIdleCallback
-![Alt text](image-1.png)
+![Alt text](img/image-1.png)
 requestIdleCallback demo 演示：
 
 ```
@@ -415,7 +415,7 @@ requestIdleCallback(workLoop);
 2.sibling(兄弟节点) 如果当前节点没有 child，那么就找当前节点的 sibling，如果当前节点没有 sibling，那么就找当前节点的 parent 的 sibling
 
 3.parent 如果当前节点没有 sibling，那么就找当前节点的 parent，如果当前节点没有 parent，那么就结束
-![Alt text](image-2.png)
+![Alt text](img/image-2.png)
 
 #### 实现转换链表
 
@@ -649,10 +649,10 @@ export default App;
 ```
 
 当前这个例子运行起来会报错，type name 是 function，当前不支持 function component
-![Alt text](image-3.png)
+![Alt text](img/image-3.png)
 我们怎么才能得到 counter 下的节点尼？
 需要调用 function（开箱）
-![Alt text](image-4.png)
+![Alt text](img/image-4.png)
 我们在 createWorkInProgress 中添加一个判断，如果 type 是 function 则调用该函数
 
 ```
@@ -666,7 +666,7 @@ function performWorkOnUnit(fiber){
 ```
 
 可以看到我们得到的是一个对象
-![Alt text](image-5.png)
+![Alt text](img/image-5.png)
 
 1. 对于我们程序来说 initChildren 需要的是一个数组，可以包裹一下，我们把 initChildren 中处理 children 的提取出来,当作参数传入
 2. 对于 function 而言我们不需要创建 dom，所以不是 function 的时候才需要创建 dom
@@ -693,7 +693,7 @@ function performWorkOnUnit(fiber){
 ```
 
 到此我们的页面可以渲染出 hi-mini-react 了，function 的组件还没有展示出来还报了一个错，这是因为我们 function 是没有父级的，子节点没办法 append 挂载
-![Alt text](image-6.png)
+![Alt text](img/image-6.png)
 那么怎么解决尼？父类没有是不是可以继续往上找，然后挂载，在统一提交的函数中处理
 
 ```
@@ -714,7 +714,7 @@ function commitWork(fiber){
 
 到这我们可以渲染 function 的组件了，但是还打印了个 null
 是因为我们在 append 的时候 把空的也添加进去了
-![Alt text](image-7.png)
+![Alt text](img/image-7.png)
 那么怎么处理呢？
 我们在 append 的时候 判断一下是不是空的，如果是空的就不添加了
 
@@ -749,7 +749,7 @@ export default App;
 ```
 
 可以看到报错了，在 append 的时候找不到父级挂载
-![Alt text](image-8.png)
+![Alt text](img/image-8.png)
 我们在找父级的时候要调整一下,利用 while 循环找到父级,这样就解决嵌套的问题了
 
 ```
@@ -834,7 +834,7 @@ export default App;
 ```
 
 可以看到目前的实现没有传 props
-![Alt text](image-9.png)
+![Alt text](img/image-9.png)
 
 接下来我们实现一下
 
@@ -849,18 +849,18 @@ function performWorkOnUnit(fiber){
 
 给完之后可以看到还是报错
 
-![Alt text](image-10.png)
+![Alt text](img/image-10.png)
 我们之前只处理 string 现在我们传入的是 number 类型，所以把我们传入的 props 当成 child 处理了
 
-![Alt text](image-11.png)
+![Alt text](img/image-11.png)
 在增加一个 number 类型的判断
 
-![Alt text](image-12.png)
+![Alt text](img/image-12.png)
 
 接下来我们调用多个 Component 组件
 
 结构如下
-![Alt text](image-13.png)
+![Alt text](img/image-13.png)
 
 App.jsx
 
@@ -961,7 +961,7 @@ function Component({ num }) {
 ```
 我们在 initChildren 函数中打印一下fiber 看看按钮生成的结构
 
-![Alt text](image-14.png)
+![Alt text](img/image-14.png)
 
 可以看到，按钮生成的 fiber 结构中，找到button结构，它下面的props中还有一个 onClick 属性。
 
@@ -1008,8 +1008,8 @@ function update(){
 ```
 2. 如何找到老的节点
     之前我们是把树转变成了链表，新链表的时候我们创建一个属性来指向老俩表的节点，那么我们什么时候构建 新链表尼？在创建链表的时候
-   ![Alt text](image-15.png)
-   ![Alt text](image-16.png)
+   ![Alt text](img/image-15.png)
+   ![Alt text](img/image-16.png)
     ```
     function update(){
         nextWorkOfUnit={
@@ -1152,7 +1152,7 @@ function update(){
     export default App;
    ```
 测试一下，每次点击 click会掉用很多次
-![Alt text](image-17.png)
+![Alt text](img/image-17.png)
 update 的时候 我们只要更新了就给他添加一个addEventListener 事件,每次都挂载到dom上 老的也没有卸载
 ```
 function updateProps(dom,nextProps,prevProps){
@@ -1174,7 +1174,7 @@ function updateProps(dom,nextProps,prevProps){
     } 
 ```
 
-## 重构代码
+### 重构代码
 root 的命名不太合适，正在工作中的root 我们叫它一个 wipRoot
 以及 update 函数中的赋值,render 的也换一下
 ```
@@ -1189,4 +1189,671 @@ function update(){
 
 initChildren 命名也不太合适，我们叫他一个reconcileChildren
 
+## 更新->创建和删除
+### type 不一致 删除旧的 创建新的
+之前我们通过 isSameType 来判断是否是同一个type,那么如果是不同的就可以删除oldFiber了，那么我们怎么删除尼？
 
+策略：把需要删除的节点都放到一个数组(deletions)中，最后统一删除在commitRoot函数中遍历deletions，删除所有节点
+```
+function cimmitRoot(){
+    deletions.forEach(commitDeletion)
+    // 省略...
+}
+function commitDeletion(fiber){
+    fiber.parent.dom.removeChild(fiber.dom);
+}
+```
+当然这么实现有点不严谨，当我们是function Component时fiber.dom是null，所以我们需要判断一下
+```
+function commitDeletion(fiber){
+    if(fiber.dom){
+        fiber.parent.dom.removeChild(fiber.dom);
+    }else{
+        commitDeletion(fiber.child);
+    }
+}
+```
+这样还会又个问题，如果走到了function Component的子节点，那么fiber.parent.dom是null,所以我们需要再循环查找父级
+```
+function commitDeletion(fiber){
+    if(fiber.dom){
+        let parentFilber = fiber.parent;
+        while (!parentFilber.dom) {
+            parentFilber = parentFilber.parent;
+        }
+        parentFilber.dom.removeChild(fiber.dom);
+    }else{
+        commitDeletion(fiber.child);
+    }
+}
+```
+App.jsx
+```
+import React from "./core/React.js";
+
+let showBar = false;
+function Component() {
+  const foo = <div>foo</div>;
+  const bar = <div>bar</div>;
+
+  function handleClick() {
+    showBar = !showBar;
+    React.update();
+  }
+  return (
+    <div>
+      <div>{showBar ? bar : foo}</div>
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+function App() {
+  return (
+    <div>
+      hi
+      <Component />
+    </div>
+  );
+}
+
+export default App;
+```
+
+### 新的比老的短 多出来的节点需要删除掉
+![Alt text](img/image-18.png)
+当前我们在处理链表的时候，是基于新child 做的遍历，所以它在处理完新的bar节点之后就不再进行处理了，多出来的节点就没有删除掉   
+解决方法：遍历完child之后我们去判断一下 oldFiber 是不是还存在，如果还存在就可以删除多余的节点了
+```
+function reconcileChildren(fiber, children) {
+  let oldFiber = fiber.alternate?.child; // 存一下老的节点
+  // 省略...
+
+  if(oldFiber){
+    deletions.push(oldFiber);
+  }
+}
+```
+我们这只是处理了一个情况，如果我们多个系欸但需要删除尼？
+用循环来处理oldFiber，并且让oldFiber指向它的兄弟节点，直到删除完所有的节点
+```
+function reconcileChildren(fiber, children) {
+  let oldFiber = fiber.alternate?.child; // 存一下老的节点
+  // 省略...
+
+  while(oldFiber){
+    deletions.push(oldFiber);
+    oldFiber = oldFiber.sibling;
+  }
+}
+```
+### 判断隐藏或显示组件
+App.jsx
+```
+import React from "./core/React.js";
+
+let showBar = false;
+function Component() {
+const bar=<div>bar</div>;
+  function handleClick() {
+    showBar=!showBar;
+    React.update();
+  }
+  return (
+    <div>
+      Component
+      <button onClick={handleClick}>click</button>
+      {showBar && bar}
+    </div>
+  );
+}
+function App() {
+  return (
+    <div>
+        hi-react
+      <Component />
+    </div>
+  );
+}
+
+export default App;
+```
+![Alt text](img/image-19.png)
+现在肯定是渲染不出来的,首先我们要看看渲染出来的结构对不对，所以我们在 createElement 函数中打印一下 child ，看看是什么结构。
+我们可以得到是一个false ,那肯定是false导致的错误了，false不是正常的节点，所以我们需要判断一下，如果 child 是 false 或者 null 的话，我们就不渲染了。
+```
+function reconcileChildren(fiber, children) {
+    // 省略... 
+    const isSameType = oldFiber && oldFiber.type === child.type;
+    let newFiber;
+    if (isSameType) {
+      // 省略... 
+    } else {
+        if(child){ // 当child为false的时候不处理newFiber
+            newFiber = {
+                type: child.type,
+                props: child.props,
+                child: null, // 子节点
+                parent: fiber,
+                sibling: null, // 兄弟节点
+                dom: null,
+                effectTag: "placement",
+            };
+        }
+    }
+    if (oldFiber) {
+      oldFiber = oldFiber.sibling;
+    }
+} 
+```
+如果我们把App.jsx中的判断逻辑提前到button 上会出现什么问题尼？
+![Alt text](img/image-20.png)
+会发现它找不到prevChild.sibling了，因为我们之前在最后处理记录上一个节点(prevChild)的时候,是把当前节点赋给它，当我们处理false的时候是没有newFiber的所以导致它在处理下一个节点时候找不到sibling。
+
+我们可以判断一下当前的newFiber是不是存在，如果存在再把上个节点赋值更新
+这样我们就能忽略掉节点是false的时候，prevChild还是上一次节点的值
+```
+function reconcileChildren(fiber, children) {
+    // 省略... 
+    if(newFiber){
+        prevChild = newFiber;
+    }
+}
+```
+### 优化更新逻辑
+问题点：更新子组件的时候 其他不相关的组件也会重新执行 造成了浪费
+
+App.jsx
+```
+import React from "./core/React.js";
+
+let count = 1;
+function Component() {
+  console.log("Component");
+  const bar = <div>bar</div>;
+  const update = React.update();
+  function handleClick() {
+    count++;
+    update();
+  }
+  return (
+    <div>
+      Component
+      {count}
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+let countBar = 1;
+function Bar() {
+  console.log("bar");
+  const update = React.update();
+  function handleClick() {
+    countBar++;
+    update();
+  }
+  return (
+    <div>
+      <h1>Bar</h1>
+      {countBar}
+      <button onClick={handleClick}>click</button>
+    </div>
+  );
+}
+function App() {
+  console.log("app");
+  return (
+    <div>
+      hi-react
+      <Component />
+      <Bar />
+      <div>1234</div>
+    </div>
+  );
+}
+
+export default App;
+
+```
+目前实现的逻辑，只要是修改了组件，就会重新渲染整个组件树，造成性能浪费
+
+解决方案：
+1. 开始节点 : 当前更新的组件
+
+我们在处理 updateFunctionComponent 的时候，把当前的节点赋值给 wipFiber全局变量 存一下
+
+在update 函数的时候利用闭包的特性，把当前的节点赋值给存到currentFiber 中
+```
+function update(){
+    let currentFiber=wipFiber;
+    return ()=>{
+        ...currentFiber,
+        alternate:currentFiber
+    }
+}
+```
+App.jsx 中要一下update的调用方式
+```
+const update=React.update();
+function handleClick(){
+    count++;
+    update();
+}
+```
+
+2. 结束点 ： 遍历完当前组件的子组件的时候，当下一个节点是处理兄弟节点的时候
+在 workLoop 函数中 获取下一个任务的时候(nextWorkOfUnit) 去检测一下，下一个任务是不是兄弟节点,如果是就把nextWorkOfUnit 设置成undefined 结束更新
+```
+function workLoop(deadline) {
+    let shouldYield=false;
+    while(nextWorkOfUnit && !shouldYield){
+        nextWorkOfUnit=performUnitOfWork(nextWorkOfUnit);
+
+        // 判断下一个节点是处理兄弟节点
+        if(wipRoot?.sibling?.type===nextWorkOfUnit?.type){
+            nextWorkOfUnit=undefined;
+        }
+
+        shouldYield=deadline.timeRemaining()<1;
+    }
+    // 省略...
+}
+```
+这样我们就可以做到，每次只更新当前的组件以及子组件了，react 中的优化点，把需要更新的拆成小组件，这样可以节约时间，提高性能。
+
+## 实现useState
+在 react 中 当state 发生改变的时候，组件才会更新
+useState 是一个 hook 函数，它接收一个初始值作为参数，并返回一个数组包含一个状态变量和一个更新状态的函数。
+App.jsx 
+```
+function Foo(){
+    const [count,setCount]=React.useState(10);
+    function handleClick(){
+        setCount(count+1);
+    }
+    return (
+        <div>
+            <p>{count}</p>
+            <button onClick={handleClick}>+1</button>
+        </div>
+    )
+}
+```
+第一步实现正常展示：
+创建 useState,并返回一个数组，数组中包含当前状态和更新状态的函数
+```
+function useState(initialValue){
+    const stateHook={
+        state:initialValue,
+    }
+    function setState(action){
+    }
+    return [stateHook.state,setState]; // 数组返回不限制引用时候的名称
+}
+```
+第二步实现更新：
+在 setState 函数中，把新的状态值赋值给 stateHook.state，并触发更新
+当前 action 是一个函数,所以调用 action() 并传入之前的 stateHook.state
+```
+function useState(initialValue){
+    let currentFiber = wipFiber;
+    const stateHook={
+        state:initialValue,
+    }
+    function setState(action){
+      stateHook.state=action(stateHook.state);
+
+      wipRoot = {
+        ...currentFiber,
+        alternate: currentFiber,
+      };
+
+      nextUnitOfWork = wipRoot;
+    }
+    return [stateHook.state,setState]; // 数组返回不限制引用时候的名称
+}
+```
+当我们再次调用返回的 setState ，又会重新创建state，初始值应该是11 而不是10 ，我们代码需要存一下老的state值
+我们可以通过指针找到老的state值，然后赋值给新的state
+
+wipRoot 被赋值之后 又会重新执行useState 函数
+```
+function useState(initialValue){
+    let currentFiber = wipFiber;
+    const oldHook = currentFiber?.alternate?.stateHook
+    const stateHook={
+        state:oldHook?oldHook.state:initialValue,
+    }
+    currentFiber.stateHook = stateHook;
+    function setState(action){
+      stateHook.state=action(stateHook.state);
+
+      wipRoot = {
+        ...currentFiber,
+        alternate: currentFiber,
+      };
+
+      nextUnitOfWork = wipRoot;
+    }
+    return [stateHook.state,setState]; // 数组返回不限制引用时候的名称
+}
+```
+第三步:当用户创建多个setState的时候
+当前我们的stateHook 只有一个，我们还需要创建多个stateHook
+需要用数组来存储 创建 stateHooks ,在updateFunctionComponent 的时候，将 stateHooks=[] 初始化
+接下来把我们的stateHook 存储到 stateHooks 数组中
+```
+function 在updateFunctionComponent(fiber){
+    stateHooks=[];
+    // 省略...
+}
+
+let stateHooks;
+function useState(initialValue){
+    // 省略...
+
+    stateHooks.push(stateHook);
+
+    currentFiber.stateHooks = stateHooks;
+}
+```
+
+接下来我们怎么把对应的 hooks 取出来尼？
+我们可以通过创建的顺序，来获取对应的 hooks，我们创建一个 stateHookIndex 变量，来记录当前的 hooks 索引,在updateFunctionComponent 的时候，将 stateHookIndex=0 初始化
+
+```
+function 在updateFunctionComponent(fiber){
+    stateHooks=[];
+    stateHookIndex=0;
+    // 省略...
+}
+
+let stateHooks;
+let stateHookIndex;
+function useState(initialValue){
+    // 省略...
+    const oldHook=currentFiber.alternate?.stateHooks[stateHookIndex];
+    // 省略...
+    stateHookIndex++;
+    stateHooks.push(stateHook);
+
+    currentFiber.stateHooks = stateHooks;
+}
+```
+react useState不能在if语句中使用，因为useState会基于创建的顺序来获取对应的 hooks
+
+App.jsx
+```
+import React from "./core/React.js";
+
+function Foo() {
+  const [count, setCount] = React.useState(10);
+  const [bar, setBar] = React.useState("bar");
+  function handleClick() {
+    setCount((c) => c + 1);
+    setBar((b) => b + "bar");
+  }
+  return (
+    <div>
+      <p>{count}</p>
+      <div>{bar}</div>
+      <button onClick={handleClick}>+1</button>
+    </div>
+  );
+}
+
+let showBar = false;
+function Component() {
+  const bar = <div>bar</div>;
+  const update = React.update();
+  function handleClick() {
+    showBar = !showBar;
+    update();
+  }
+  return (
+    <div>
+      Component
+      <button onClick={handleClick}>click</button>
+      {showBar && bar}
+    </div>
+  );
+}
+function App() {
+  return (
+    <div>
+      hi
+      <Foo />
+    </div>
+  );
+}
+
+export default App;
+```
+
+### 批量执行action
+react 中并不是每次调用setCount就执行更新的，而是先收集起来，然后等到下次调用useState 的时候，再批量执行，达到优化的效果。
+
+对于我们现在实现的mini-react 不存在这种每调用一次就更新视图的问题，因为不管是setCount还是setBar 都是调用setState 因为是同步的所以每次都会调用一遍 setState ，不会去执行workLoop 中的sibling 判断逻辑.
+
+写法上还是模仿一下 react
+在 stateHook 中添加 queue 队列
+```
+function useState(initial){
+    const stateHook={
+        // 省略...
+        queue:[],// 新增队列属性，用于存储action
+    }
+
+    stateHook.queue.forEach((action)=>{
+        stateHook.state=action(stateHook.state);
+    })
+
+    stateHook.queue=[];
+
+    // 省略...
+
+    function setState(action){
+        stateHook.queue.push(action);
+
+        // 省略...
+
+    }
+
+// 省略...
+}
+```
+
+支持一下传入 非function的写法
+```
+function useState(initial){
+     // 省略...
+
+    function setState(action){
+        stateHook.queue.push(typeof action === 'function'?action:()=>action);
+
+        // 省略...
+
+    }
+
+// 省略...
+}
+```
+
+### 提前检测 减少不必要的更新
+
+比如更新之前是 1 更新之后还是 1 那么我们就可以不做处理了
+```
+function useState(initial){
+    const eagerState = typeof action === 'function'?action(stateHook.state):action;
+
+    if(eagerState === stateHook.state) return; // 提前检测，减少不必要的更新
+     // 省略...
+}
+```
+
+## useEffect 实现
+useEffect 调用的时机是在 React 完成对 DOM 的渲染之后，并且浏览器完成绘制之前。
+
+useEffect 的第二个参数是依赖数组，不指定的时候副作用指挥在组件渲染后执行一次，如果指定了依赖数组，那么只有当依赖数组中的值发生变化时，副作用才会执行。
+
+App.jsx
+```
+useEffect(()=>{
+    console.log('init');
+},[]);
+useEffect(()=>{
+    console.log('update');
+},[count]);
+```
+### 实现初始化 useEffect
+在 React.js 中创建 useEffect 函数,来收集用户传入进来的effectHook 
+```
+function useEffect(callback,deps){
+    const effectHook={
+        callback,
+        deps
+    }
+    wipFiber.effectHook=effectHook;
+}
+```
+
+在 React 完成对 DOM 的渲染之后,执行effectHook.callback 函数。如果依赖数组发生变化，则执行effectHook.callback 函数。
+```
+function commitRoot(){
+    // 省略...
+    commitWork(wipFiber.child);
+    commitEffectHook()
+}
+```
+那么我们怎么找到这个effectHook呢？我们需要从根节点依次递归寻找如果存在effectHook 就执行 effectHook.callback
+```
+function commitEffectHook(){
+    function run(fiber){
+        if(!fiber) return;
+        fiber.effectHook?.callback();
+        run(fiber.child);
+        run(fiber.sibling);
+    }
+
+    run(wipFiber)
+}
+```
+
+### 实现带有依赖项的 useEffect
+更新的时候需要检测依赖项是否发生变化，如果发生变化则执行effectHook.callback 函数。
+
+通过fiber.alternate来判断是初始化还是更新，如果是更新则需要检测依赖项是否发生变化。
+利用 some 方法来判断依赖项是否发生变化。
+
+```
+function commitEffectHook(){
+    function run(fiber){
+        if(!fiber) return;
+
+        if(fiber.alternate){
+            // update
+            // 检测 deps 有没有发生改变
+            const oldEffectHook=fiber.alternate?.effectHook;
+            const needUpdate=oldEffectHook?.deps?.some((item,index)   =>item!==fiber.effectHook.deps[index]
+            );
+            needUpdate && fiber.effectHook.callback();
+        }else{
+            // init
+            fiber.effectHook?.callback();
+        }
+        run(fiber.child);
+        run(fiber.sibling);
+    }
+
+    run(wipFiber)
+}
+```
+
+### 实现支持多个effectHook的 useEffect
+创建数组 effectHooks 全局变量,在 updateFuncionComponent 函数中初始化 effectHooks=[]
+
+然后在 useEffect 的时候存一下所有的effectHooks
+
+任务拆分思想小技巧：在实现功能的时候不要去考虑如何重构、如何去设计，先实现功能，然后再考虑如何优化。把事情变得简单点。
+```
+let effectHooks;
+function useEffect(callback,deps){
+    const effectHook={
+        callback,
+        deps
+    }
+
+    effectHooks.push(effectHook);
+    wipFiber.effectHooks=effectHooks;
+}
+
+function commitEffectHook(){
+    function run(fiber){
+        if(!fiber) return;
+
+        if(fiber.alternate){
+            // update
+            // 检测 deps 有没有发生改变
+            fiber.effectHooks?.forEach((newHook,index)=>{
+                if(newHook.deps.length>0){
+                    const oldEffectHook=fiber.alternate?.effectHook;
+                    const needUpdate=oldEffectHook?.deps?.some((item,i)   =>item!==newHook.deps[i]
+                    );
+                    needUpdate && newHook.callback();
+                }
+            })
+            
+        }else{
+            // init
+            fiber.effectHooks?.forEach(hook=>hook.callback());
+        }
+        run(fiber.child);
+        run(fiber.sibling);
+    }
+
+    run(wipFiber)
+}
+```
+
+## cleanup 实现
+cleanup 就是 effectHook 中的 callback 执行的时候，会先执行 cleanup 中的函数，然后执行 callback 中的函数,当 deps 为空的时候不会调用返回的 cleanup
+cleanup 的作用是为了清空副作用
+
+那么我们存在哪里？可以存在 effectHook 中
+
+```
+function useEffect(callback,deps){
+    const effectHook={
+        callback,
+        deps,
+        cleanup:null
+    }
+
+    effectHooks.push(effectHook);
+    wipFiber.effectHooks=effectHooks;
+}
+```
+当我们执行 callback() 的时候 返回 cleanup 函数
+```
+function commitEffectHook(){
+    function run(fiber){
+        if(!fiber) return;
+
+       // 省略...
+       hook.cleanup=hook.callback();
+       // 省略...
+    }
+
+    function runCleanup(fiber){
+        if(!fiber) return;
+        fiber.alternate?.effectHooks?.forEach(hook=>{
+            if(hook.deps.length>0){
+                hook.cleanup&&hook.cleanup();
+            }
+        }); // 执行 cleanup 函数，清空副作用
+        runCleanup(fiber.child);
+        runCleanup(fiber.sibling);
+    }
+    runCleanup(wipRoot)
+    run(wipRoot);
+}
+```
