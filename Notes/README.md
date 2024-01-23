@@ -21,7 +21,7 @@ dom.id="app"
 document.querySelector("#root").appendChild(dom);
 
 const textNode = document.createTextNode("");
-textNode.nodeValue = "app";
+textNode.nodeValue = "hi-mini-react";
 dom.append(textNode)
 
 ```
