@@ -1,24 +1,24 @@
 ### 一、选项式Api与组合式Api
-选项式api是将data和mathods方法放在一个对象中包括watch和computed选项，而组合式api是将相关逻辑放到一起(类似于原生js开发)，setup函数是组合式api的入口函数。使用setup语法糖可以让变量和方法直接暴露给模板，从而在模板中使用。
+选项式api是将data和mathods方法放在一个对象中（包括watch和computed选项），而组合式api是将相关逻辑放到一起(类似于原生js开发)，setup函数是组合式api的入口函数。使用setup语法糖可以让变量和方法直接暴露给模板，从而在模板中使用。
 ### 二、响应式的创建
 1. 在vue2 中 data函数的数据都具有响应式，在vue3中需要使用ref和reactive来创建响应式数据。
-2. ref和reactive的区别：ref用来处理基本数据类型，reactive用来处理对象类型。
+2. ref和reactive的区别：ref用来处理基本数据类型，在js代码中需要使用.value来获取，reactive用来处理对象类型。
 
 3. 在vue2中使用Object.defineProperty()来创建响应式数据，在vue3中使用Proxy来创建响应式数据。
-4. proxy可以监听数组的变化以及属性删除等操作，而defineProperty()只能监听对象属性的变化。
+4. proxy可以监听数组的变化以及属性删除等约13种操作，而defineProperty()只能监听对象属性的变化。
 5. defineProperty需要循环遍历对象的所有属性，而proxy只需要监听对象本身即可。
 
-6. 他们都是通过get方法来收集响应式数据的依赖，利用set的去重的功能来存储每次得到的effects，从而实现依赖收集，再通过set方法来触发依赖，实现通知依赖更新。
+6. 他们都是通过get方法来收集响应式数据的依赖，存储每次得到的effects，从而实现依赖收集，再通过set方法来触发依赖，实现通知依赖更新。
 
 ### 三、生命周期的变化
 1. vue2中的生命周期钩子函数在vue3中已经被移除，取而代之的是组合式api中的生命周期钩子函数。
-2. 组合式API采用hook函数引入生命周期钩子函数,不止生命周期采用hook函数引入，像watch和computed也采用hook函数引入。
+2. 组合式API采用hook函数引入生命周期钩子函数，不止生命周期采用hook函数引入，像watch和computed等也采用hook函数引入。
 
 3. vue3的生命周期相对于vue2做了一些调整，命名上发生了变化，并且去除了beforeCreate和created这两个生命周期钩子函数。因为setup函数在组件创建之前就已经执行了，所以这两个生命周期钩子函数已经没有存在的必要。
 
 |  | 阶段 | 触发阶段 | Vue2 | Vue3 | 描述 |
 | ---- | ---- | ---- | ---- | ---- | ---- |
-| <td rowspan="4">创建阶段</td> | 实例创建前 | onBeforeCreate | - | 组件创建前调用 |
+| <td rowspan="4">创建阶段</td> | 实例创建前 | beforeCreate | - | 组件创建前调用 |
 |  | 实例创建后 | created | - | 组件创建后调用 |
 |  | DOM挂载前 | beforeMount | onBeforeMount | DOM挂载前调用 |
 |  | DOM挂载完成 | mounted | onMounted | DOM挂载完成调用 |
@@ -81,7 +81,7 @@ vue3中移除了syns的写法，取而代之的是v-model:event的形式
 ### 八、快速 diff 算法
 Vue2和Vue3的diff算法在实现上有所不同，主要体现在以下几个方面：
 
-1. Vue2采用了递归比较整个虚拟DOM树的方式，而Vue3采用了基于栈的表格算法，这使得diff过程更快。使用最长子序列算法可以更高效地处理列表的更新。
+1. Vue2采用了递归比较整个虚拟DOM树的方式，而Vue3采用了基于栈的表格算法，这使得diff过程更快。其中使用最长子序列算法可以更高效地处理列表的更新。
 
 2. Vue3中增加了Push/Patch flags的概念，可以更精确地表示节点的变化类型，减少了不必要的比较，进一步提高了diff的效率。例如：
    1. childOnly：如果设置，表示 patch 函数只更新当前节点的子节点。例如，当更新文本节点时。
@@ -111,7 +111,7 @@ Suspense 是一个用于控制渲染顺序的 Vue 3 组件。它允许你控制�
 ### 八、Fragment
 Fragment 允许你根据组件的嵌套层级来渲染或省略部分组件。这可以帮助你减少页面内容的渲染，从而提高页面加载速度。Fragment 基于 Vue 的依赖注入和组件渲染机制，可以被用在任何需要优化性能的 Vue 应用程序中。
 
-### 静态提升
+### 九、静态提升
 在 Vue 3 中，我们使用了静态编译器（如 Webpack 或 Rollup）来优化代码。在编译过程中，Vue 使用了静态编译器的优化技术，比如内联样式、纯函数组件、代码压缩等，从而提高了应用程序的性能。
 
 1. 内联样式：Vue 3 会将组件的样式内联到 JavaScript 代码中，这样浏览器就可以直接通过 JavaScript 解析样式，而不需要额外的 HTML 标签。这有助于减少额外的网络请求和渲染时间。
