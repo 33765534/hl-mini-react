@@ -54,6 +54,12 @@ watchEffect()函数是vue3中新增的一个函数，它可以自动收集依赖
 watchEffect()函数的参数是一个函数，该函数中可以访问到响应式的数据，并且当响应式的数据发生变化时，会自动重新执行该函数。
 watchEffect()函数的返回值是一个函数，该函数可以用来停止监听。
 computed和watch所依赖的数据必须是响应式的，watchEffect相当于将watch的依赖源和回调函数合并，不同于 watch的是 watchEffect 的回调函数会被立即执行，即({immediate:true})
+watchEffect 和 watch 区别：
+1. watchEffect 能自动收集响应式的数据，而 watch 需要手动指定依赖源。
+2. watchEffect 没有 immediate 选项，而 watch 有。
+3. watchEffect 无法获取变化前的值，而 watch 可以。
+4. 副作用：watchEffect 是 Vue 3 中引入的一种新的监听方式，它允许你定义一个副作用函数，这个函数会在依赖项发生变化时被调用。而 watch 则是一个简单的监听器，它会在依赖项发生变化时触发一个回调函数。
+5. 返回值：watchEffect 返回一个取消监听的函数，你可以通过调用这个函数来取消监听。而 watch 没有返回值，因此你无法直接取消监听。
 
 ### 六、组件通信
 vue中组件通信方式有很多,vue2和vue3中组件通信方式也有所不同。
@@ -62,26 +68,26 @@ vue中组件通信方式有很多,vue2和vue3中组件通信方式也有所不�
 | ---- | ---- | ---- | 
 | 父传子 | props | props |
 | 子传父 | $emit | emits |
-| 父传子 | $attrs | attrs |
-| 子传父 | $listeners | 无(合并到 attrs方式) |
+| 父传子 | $attrs | $attrs |
+| 子传父 | $listeners | 无(合并到 $attrs方式) |
 | 父传子 | provide | provide |
 | 子传父 | inject | inject |
-| 子组件访问父组件 | $parent | 无 |
-| 父组件访问子组件 | $children | 无 |
-| 父组件访问子组件 | $ref | expose&ref |
+| 子组件访问父组件 | $parent | $parent |
+| 父组件访问子组件 | $children | $children |
+| 父组件访问子组件 | $ref | defineExpose&ref |
 | 兄弟传值 | EventBus | mitt |
 
 ### 七、v-model 和 syns
 vue3中移除了syns的写法，取而代之的是v-model:event的形式
 
-其v-model:changePval="msg"或者:changePval.sync="msg"的完整写法为 :msg="msg" @update:changePval="msg=$event"。
+其v-model:changePval="msg" 的完整写法为 :msg="msg" @update:changePval="msg=$event"。
 
 所以子组件需要发送update:changePval事件进行修改父组件的值
 
 ### 八、快速 diff 算法
 Vue2和Vue3的diff算法在实现上有所不同，主要体现在以下几个方面：
 
-1. Vue2采用了递归比较整个虚拟DOM树的方式，而Vue3采用了基于栈的表格算法，这使得diff过程更快。其中使用最长子序列算法可以更高效地处理列表的更新。
+1. Vue2采用了递归比较整个虚拟DOM树的方式，而Vue3使用了 shallowDiff 方法来比较两个对象，从而决定哪些属性需要更新，这使得diff过程更快。其中使用最长子序列算法可以更高效地处理列表的更新。
 
 2. Vue3中增加了Push/Patch flags的概念，可以更精确地表示节点的变化类型，减少了不必要的比较，进一步提高了diff的效率。例如：
    1. childOnly：如果设置，表示 patch 函数只更新当前节点的子节点。例如，当更新文本节点时。
@@ -101,15 +107,20 @@ Vue2和Vue3的diff算法在实现上有所不同，主要体现在以下几个�
 
 8.  Vue3中的diff算法还包括了对Composition API和Teleport等特性的支持。
 
-### 六、Teleport
+### 六、Teleport(瞬移)
 Teleport 用于将我们的组件html结构移动到指定的标签下。
 它允许你将一个元素从一个位置移动到另一个位置，从而实现动画效果。Teleport 是一个与元素位置相关的组件，它可以被用在任何需要进行位置跳转的 Vue 应用程序中。
 
-### 七、Suspense
-Suspense 是一个用于控制渲染顺序的 Vue 3 组件。它允许你控制具有多个依赖关系的组件的渲染顺序，从而实现动画效果。Suspense 是一个基于依赖追踪的组件，它可以被用在任何需要控制渲染顺序的 Vue 应用程序中。
+### 七、Suspense(不确定的)
+它们允许我们的应用程序在等待异步组件时渲染一些后备内容，可以让我们创建一个平滑的用户体验
+Suspense 用于实现内容延迟加载。它有一个 fallback 属性，用于指定当资源加载失败时的替代内容。这个组件主要用于解决网络延迟问题，当某个资源需要等待一段时间才能加载时，可以将其包裹在 <Suspense> 组件中，从而避免用户看到加载中的页面。
 
-### 八、Fragment
-Fragment 允许你根据组件的嵌套层级来渲染或省略部分组件。这可以帮助你减少页面内容的渲染，从而提高页面加载速度。Fragment 基于 Vue 的依赖注入和组件渲染机制，可以被用在任何需要优化性能的 Vue 应用程序中。
+Suspense 组件会触发三个事件：pending、resolve 和 fallback。pending 事件是在进入挂起状态时触发。resolve 事件是在 default 插槽完成获取新内容时触发。fallback 事件则是在 fallback 插槽的内容显示时触发。
+
+### 八、Fragment(片断)
+1. 在Vue2中: 组件必须有一个根标签
+2. 在Vue3中: 组件可以没有根标签, 内部会将多个标签包含在一个Fragment虚拟元素中
+3. 好处: 减少标签层级, 减小内存占用
 
 ### 九、静态提升
 在 Vue 3 中，我们使用了静态编译器（如 Webpack 或 Rollup）来优化代码。在编译过程中，Vue 使用了静态编译器的优化技术，比如内联样式、纯函数组件、代码压缩等，从而提高了应用程序的性能。
