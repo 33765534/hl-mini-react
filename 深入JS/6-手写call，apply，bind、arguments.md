@@ -1,19 +1,3 @@
-## 柯里化函数的特点
-柯里化（Currying）是把接受多个参数的函数变换成接受一个单一参数(最初函数的第一个参数)的函数，并且返回接受余下的参数且返回结果的新函数的技术。
-1. 参数复用
-2. 业务解耦，调用时机灵活
-3. 延迟执行，部分求值
-
-示例：
-```
-function sum(num1,num2,num3,num4) {
-    console.log(num1,num2,num3,num4);
-}
-
-var newSum = sum.bind("aaa",10);
-newSum(20,30,40);
-```
-
 ## 实现手写 call
 ```
 // 给所有的函数添加一个 hycall 方法
@@ -96,4 +80,52 @@ function sum(num1,num2,num3,num4) {
 var newSum = sum.myBind("aaa",10);
 newSum(20,30,40);
 
+```
+
+## 认识 arguments
+### 特点
+1. arguments是一个类数组对象，它包含传入函数中的所有参数
+2. arguments 不是一个数组类型，但是它拥有数组的一些属性，例如 length，比如可以通过index索引来访问，但是它没有数组的一些方法，例如 forEach、map 等
+3. arguments 对象还有一些属性，例如 callee 表示当前执行的函数，caller 表示调用当前函数的函数
+
+
+### 箭头函数中没有arguments
+注：如果箭头函数中写了arguments，那么会去上层作用域找，如果找到最高层的全局作用域，在node环境中全局作用域是有arguments，浏览器的全局作用域中是没有arguments
+
+### arguments转数组
+1. 自己遍历
+```
+function foo(num1,num2){
+    var newArray = [];
+    for(var i=0;i<arguments.length;i++){
+        newArray.push(arguments[i]);
+    }
+}
+```
+2. Array.prototype.slice 将 arguments 转换成数组
+```
+var newArray = Array.prototype.slice.call(arguments);
+
+var newArray2 = [].slice.call(arguments);
+``` 
+3. ES6 语法 Array.from 将 arguments 转换成数组
+```
+var newArray3 = Array.from(arguments);
+var newArray4 = [...arguments];// 扩展运算符
+```
+### 手写数组的slice方法
+```
+Array.prototype.mySlice = function(start,end){
+    var arr = this
+    start = start || 0;
+    end = end || arr.length;
+    var newArray = [];
+    for(var i=start;i<end;i++){
+        newArray.push(arr[i]);
+    }
+    return newArray;
+}
+
+var newArray = [1,2,3,4,5].mySlice(0,3);
+console.log(newArray);
 ```
